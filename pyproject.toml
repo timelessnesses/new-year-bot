@@ -1,29 +1,31 @@
 [tool.poetry]
-name = "template_bot"
+name = "new year bot"
 version = "0.1.0"
-description = ""
+description = "A alphabet counter bot"
 authors = ["timelessnesses <mooping3roblox@gmail.com>"]
+license = "MPL-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.8"
 "discord.py" = {git = "https://github.com/Rapptz/discord.py"}
+orjson = "^3.6.8"
 aiohttp = {extras = ["speedups"], version = "^3.8.1"}
-Flask = "^2.1.2"
-orjson = "^3.7.3"
+asyncpg = "^0.25.0"
 python-dateutil = "^2.8.2"
 parsedatetime = "^2.6"
-jishaku = "^2.5.0"
-psutil = "^5.9.1"
-discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
 python-dotenv = "^0.20.0"
+jishaku = "^2.5.0"
+psutil = "^5.9.0"
+discord-ext-menus = {git = "https://github.com/Rapptz/discord-ext-menus"}
+watchdog = "^2.1.7"
+Flask = "^2.1.2"
+uvloop = {version = "^0.16.0", platform = "linux"}
 
 [tool.poetry.dev-dependencies]
+watchdog = "^2.1.7"
 black = "^22.3.0"
 isort = "^5.10.1"
 autoflake = "^1.4"
-flake8 = "^4.0.1"
-watchdog = "^2.1.9"
-pylint = "^2.14.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,3 +1,9 @@
+try:
+    import uvloop
+    uvloop.install()
+except (ImportError, ModuleNotFoundError):
+    pass
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -9,10 +15,13 @@ import asyncio
 import datetime
 import logging
 import os
+import ssl
 import subprocess
 import traceback
 
 from replit_support import start
+from sql.sql import EasySQL
+from config import config
 
 formatting = logging.Formatter("[%(asctime)s] - [%(levelname)s] [%(name)s] %(message)s")
 
@@ -22,7 +31,7 @@ logging.basicConfig(
     datefmt="%Y/%m/%d %H:%M:%S",
 )
 
-log = logging.getLogger("")
+log = logging.getLogger("AlphabetBot")
 log.setLevel(logging.NOTSET)
 
 try:
@@ -31,13 +40,13 @@ except FileExistsError:
     pass
 with open("logs/bot.log", "w") as f:
     f.write("")
-f = logging.FileHandler("logs/bot.log", "r")
+f = logging.FileHandler("logs/bot.log", "a", "utf-8")
 f.setFormatter(formatting)
 log.addHandler(f)
 
 logging.getLogger("discord").setLevel(logging.WARNING)  # mute
 
-bot = commands.Bot(command_prefix="", intents=discord.Intents.all())
+bot = commands.Bot(command_prefix="a!", intents=discord.Intents.all())
 bot.log = log
 
 observer = Observer()
@@ -70,7 +79,7 @@ def get_git_revision_short_hash() -> str:
 
 
 def get_version():
-    is_updated = subprocess.check_output("git status", shell=True).decode("ascii")
+    is_updated = subprocess.check_output("git status -uno", shell=True).decode("ascii")
 
     if "modified" in is_updated:
         is_updated = None
@@ -88,6 +97,24 @@ def get_version():
         bot.version_ = f"{get_git_revision_short_hash()} (modified)"
     else:
         bot.version_ = f"old ({get_git_revision_short_hash()}) - not up to date"
+
+
+if os.environ.get("ALPHABET_URI"):  # exists
+    args = dict(
+        dsn=os.environ["ALPHABET_URI"],
+    )
+else:
+    args = dict(
+        host=os.environ["ALPHABET_DB_HOST"],
+        user=os.environ["ALPHABET_DB_USER"],
+        password=os.environ["ALPHABET_DB_PASSWORD"],
+        database=os.environ["ALPHABET_DB_NAME"],
+    )
+
+ssl_object = ssl.create_default_context()
+ssl_object.check_hostname = False
+ssl_object.verify_mode = ssl.CERT_NONE
+args["ssl"] = ssl_object
 
 
 @bot.event
@@ -111,7 +138,22 @@ async def main():
                         log.info(f"Loaded extension {extension[:-3]}")
                 await bot.load_extension("jishaku")
                 log.info("Loaded jishaku")
-
+                try:
+                    bot.db = await EasySQL().connect(**args)
+                except ConnectionError:
+                    log.fatal("Failed to connect to database")
+                    log.info("Trying to remove SSL context")
+                    args["ssl"] = None
+                    try:
+                        bot.db = await EasySQL().connect(**args)
+                    except ConnectionError:
+                        log.exception("Failed to connect to database")
+                        log.fatal("Exiting...")
+                        return
+                    log.info("Successfully connected to database")
+                log.info("Connected to database")
+                await bot.db.execute(open("sql/starter.sql", "r").read())
+                log.info("Executed starter sql")
                 observer.start()
                 log.info("Started file watcher")
                 bot.start_time = datetime.datetime.utcnow()
@@ -123,12 +165,13 @@ async def main():
                     start()
                     log.info("REPLIT detected opening webserver for recieve pinging")
                 try:
-                    await bot.start(os.environ["TOKEN"])
+                    await bot.start(config.token)
                 except discord.errors.HTTPException:
                     log.exception("You likely got ratelimited or bot's token is wrong")
                 started = True  # break loop
     except KeyboardInterrupt:
         log.info("Exiting...")
+        await bot.db.close()
 
 
 if __name__ == "__main__":
