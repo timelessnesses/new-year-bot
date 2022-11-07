@@ -1,5 +1,6 @@
 try:
     import uvloop
+
     uvloop.install()
 except (ImportError, ModuleNotFoundError):
     pass
@@ -19,9 +20,9 @@ import ssl
 import subprocess
 import traceback
 
+from config import config
 from replit_support import start
 from sql.sql import EasySQL
-from config import config
 
 formatting = logging.Formatter("[%(asctime)s] - [%(levelname)s] [%(name)s] %(message)s")
 
