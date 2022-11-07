@@ -11,7 +11,6 @@ database_port = os.getenv("NEW_YEAR_DATABASE_PORT")
 database_name = os.getenv("NEW_YEAR_DATABASE_NAME")
 database_user = os.getenv("NEW_YEAR_DATABASE_USER")
 database_password = os.getenv("NEW_YEAR_DATABASE_PASSWORD")
-database_ssl = True if bool(int(os.getenv("NEW_YEAR_DATABASE_SSL"))) else False
 database_url = "postgresql://{}:{}@{}:{}/{}".format(
     database_user, database_password, database_host, database_port, database_name
 )

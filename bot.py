@@ -40,9 +40,9 @@ except FileExistsError:
     pass
 with open("logs/bot.log", "w") as f:
     f.write("")
-f = logging.FileHandler("logs/bot.log", "a", "utf-8")
-f.setFormatter(formatting)
-log.addHandler(f)
+b = logging.FileHandler("logs/bot.log", "a", "utf-8")
+b.setFormatter(formatting)
+log.addHandler(b)
 
 logging.getLogger("discord").setLevel(logging.WARNING)  # mute
 
@@ -101,18 +101,20 @@ def get_version():
 
 if os.environ.get("ALPHABET_URI"):  # exists
     args = dict(
-        dsn=os.environ["ALPHABET_URI"],
+        dsn=config.database_url,
     )
 else:
     args = dict(
-        host=os.environ["ALPHABET_DB_HOST"],
-        user=os.environ["ALPHABET_DB_USER"],
-        password=os.environ["ALPHABET_DB_PASSWORD"],
-        database=os.environ["ALPHABET_DB_NAME"],
+        host=config.database_host,
+        user=config.database_user,
+        password=config.database_password,
+        database=config.database_name,
+        port=int(config.database_port),
+        
     )
 
 ssl_object = ssl.create_default_context()
-ssl_object.check_hostname = False
+ssl_object.check_hostname = False # type: ignore
 ssl_object.verify_mode = ssl.CERT_NONE
 args["ssl"] = ssl_object
 

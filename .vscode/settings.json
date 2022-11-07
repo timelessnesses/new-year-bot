@@ -1,4 +1,16 @@
 {
     "python.linting.mypyEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "new year bot",
+            "database": "new_year_bot",
+            "username": "new_year",
+            "password": "moomooping"
+        }
+    ]
 }
