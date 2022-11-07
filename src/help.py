@@ -11,10 +11,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands, menus
 
+import config.config as config
+
 from .utils import time
 from .utils.paginator import Pages
 
-import config.config as config
 
 class GroupHelpPageSource(menus.ListPageSource):
     def __init__(

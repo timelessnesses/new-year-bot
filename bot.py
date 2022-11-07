@@ -111,11 +111,10 @@ else:
         password=config.database_password,
         database=config.database_name,
         port=int(config.database_port),
-        
     )
 
 ssl_object = ssl.create_default_context()
-ssl_object.check_hostname = False # type: ignore
+ssl_object.check_hostname = False  # type: ignore
 ssl_object.verify_mode = ssl.CERT_NONE
 args["ssl"] = ssl_object
 

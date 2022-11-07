@@ -1,16 +1,19 @@
 import discord
-from discord.ext import commands,tasks
+from discord.ext import commands, tasks
+
 import sql.sql as sql
+
 
 class New_Year(commands.Cog):
     """
     New year group command
     """
-    def __init__(self,bot: commands.Bot):
+
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.db:sql.EasySQL = bot.db
+        self.db: sql.EasySQL = bot.db
         self.check_guild.start()
-        
+
     @tasks.loop(seconds=60)
     async def check_guild(self):
         all_guilds = await self.db.fetch("SELECT * FROM config")
@@ -21,6 +24,6 @@ class New_Year(commands.Cog):
                 await guild.owner.send(
                     embed=discord.Embed(
                         title="Please setup bot!",
-                        description="Bot won't works if you don't setup bot!"
+                        description="Bot won't works if you don't setup bot!",
                     )
                 )
