@@ -25,7 +25,7 @@ class Timezone_checker(commands.Converter):
 
 async def timezone_autocomplete(interaction: discord.Interaction, current: str):
     timezones = pytz.all_timezones
-    return [timezone for timezone in timezones if timezone.startswith(current)]
+    return [app_commands.Choice(name=timezone.replace("_"," ").title(),value=timezone) for timezone in timezones if timezone.startswith(current)][:25]
 
 
 class New_Year(commands.Cog):
@@ -36,41 +36,39 @@ class New_Year(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db: sql.EasySQL = bot.db
-        self.check_guild.start()
-
-    @tasks.loop(hours=24)
-    async def check_guild(self):
-        all_guilds = await self.db.fetch("SELECT * FROM config")
-        await self.bot.wait_until_ready()
-        for guild in self.bot.guild:
-            guild: discord.Guild
-            if guild.id not in all_guilds:
-                await guild.owner.send(
-                    embed=discord.Embed(
-                        title="Please setup bot!",
-                        description="Bot won't works if you don't setup bot!",
-                    )
-                )
-                continue
+        self.check_time.start()
+        self.initialize_guilds.start()
+        
+    @tasks.loop(minutes=5)
+    async def intialize_guilds(self):
+        guilds = await self.db.fetch("SELECT guild_id FROM guilds")
+        for guild in self.bot.guilds:
+            if not guild.id in guilds:
+                await self.db.execute("INSERT INTO config (guild_id) VALUES ($1)",guild.id)
+                
 
     @tasks.loop(minutes=5)
     async def check_time(self):
         await self.bot.wait_until_ready()
         now = datetime.now()
-        for guild in self.bot.guild:
+        for guild in self.bot.guilds:
             guild: discord.Guild  # mf type hinting
             db_guild = await self.db.fetch(
                 "SELECT * FROM config WHERE guild_id = $1", guild.id
             )
-            reminder_message = await self.db.fetch(
-                "SELECT * FROM reminder_mesage WHERE guild_id = $1"
-            )
+            if guild.id not in [x["guild_id"] for x in db_guild]:
+                continue
+            reminder_message = (await self.db.fetch(
+                "SELECT * FROM reminder_message WHERE guild_id = $1",
+                guild.id
+            ))[0]
             reminder_message = await guild.get_channel(
                 reminder_message["channel_id"]
             ).fetch_message(reminder_message["message_id"])
-            new_year_message = await self.db.fetch(
-                "SELECT * FROM new_year_message WHERE guild_id = $1"
-            )
+            new_year_message = (await self.db.fetch(
+                "SELECT * FROM new_year_message WHERE guild_id = $1",
+                guild.id
+            ))[0]
             new_year_message = guild.get_channel(new_year_message["channel_id"])
             try:
                 current_timezone = pytz.timezone(db_guild["timezone"].title())
@@ -94,7 +92,7 @@ class New_Year(commands.Cog):
                     ),
                 )
                 await self.db.execute(
-                    "INSERT INTO new_year_message(id) VALUES ($1) WHERE guild_id = $2",
+                    "UPDATE new_year_message(id) VALUES ($1) WHERE guild_id = $2",
                     j.id,
                     guild.id,
                 )
@@ -162,6 +160,37 @@ class New_Year(commands.Cog):
                 color=discord.Color.green(),
             )
         )
+        now = datetime.now()
+        db_guild = (await self.db.fetch(
+            "SELECT * FROM config WHERE guild_id = $1", ctx.guild.id
+        ))[0]
+        try:
+            current_timezone = pytz.timezone(db_guild["timezone"].title())
+        except pytz.exceptions.UnknownTimeZoneError:
+            current_timezone = pytz.timezone("UTC")
+        current_time = now.astimezone(current_timezone)
+        new_year_time = datetime(
+            current_time.year, 1, 1, 0, 0, 0, 0, current_timezone
+        )
+        estimated_left = new_year_time - current_time
+            
+        a = await channel.send(
+            embed=(
+                discord.Embed(
+                    title="New year is coming!",
+                    description=f"{self.format_time_to_string(estimated_left)} left until new year!",
+                    color=discord.Color.green(),
+                )
+            ).set_footer(
+                text=f"This message is controlled by timezone that's configured by the owner: {current_timezone.zone}"
+            )
+        )
+        await self.db.execute(
+            "UPDATE reminder_message(message_id, channel_id, guild_id) VALUES ($1, $2, $3)",
+            a.id,
+            channel.id,
+            ctx.guild.id
+        )
 
     @config.command()
     @app_commands.autocomplete(timezone=timezone_autocomplete)
@@ -173,9 +202,10 @@ class New_Year(commands.Cog):
         - You can use UTC as default timezone
         - You can use UTC offset to set timezone (+7, -7)
         """
+        timezone: typing.Union[pytz._UTCclass,pytz.StaticTzInfo,pytz.DstTzInfo]
         await self.db.execute(
             "UPDATE config SET timezone = $1 WHERE guild_id = $2",
-            timezone,
+            timezone.zone,
             ctx.guild.id,
         )
         await ctx.send(
@@ -186,10 +216,12 @@ class New_Year(commands.Cog):
         )
 
     @config.command()
-    async def ping_role(self, ctx: commands.Context, role: discord.Role = "@everyone"):
+    async def ping_role(self, ctx: commands.Context, role: discord.Role=None):
         """
         Set a role for ping when new year is coming
         """
+        if not role:
+            role = [x for x in ctx.guild.roles if x.name == "@everyone"][0]
         await self.db.execute(
             "UPDATE new_year_message SET ping_role_id = $1 WHERE guild_id = $2",
             role.id,

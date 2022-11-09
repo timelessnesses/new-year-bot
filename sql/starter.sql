@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS config(
     guild_id BIGINT NOT NULL PRIMARY KEY,
-    annouce_channel_id BIGINT NOT NULL,
-    timezone VARCHAR(255) NOT NULL
+    annouce_channel_id BIGINT DEFAULT NULL,
+    timezone VARCHAR(255) NOT NULL DEFAULT "UTC"
 );
 
 CREATE TABLE IF NOT EXISTS reminder_message(
     id BIGINT NOT NULL PRIMARY KEY,
     guild_id BIGINT NOT NULL,
-    channel_id BIGINT NOT NULL
+    channel_id BIGINT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS new_year_message(

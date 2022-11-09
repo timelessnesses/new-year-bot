@@ -32,7 +32,7 @@ logging.basicConfig(
     datefmt="%Y/%m/%d %H:%M:%S",
 )
 
-log = logging.getLogger("AlphabetBot")
+log = logging.getLogger("NewYearBot")
 log.setLevel(logging.NOTSET)
 
 try:
@@ -125,7 +125,7 @@ async def on_ready():
     log.info(bot.user.name)
     log.info(bot.user.id)
     log.info("------")
-    await bot.change_presence(activity=discord.Game(name="a!help"))
+    await bot.change_presence(activity=discord.Game(name=f"{config.prefix}help"))
     await bot.tree.sync()
 
 
@@ -134,12 +134,6 @@ async def main():
         started = False
         while not started:
             async with bot:
-                for extension in os.listdir("src"):
-                    if extension.endswith(".py") and not extension.startswith("_"):
-                        await bot.load_extension(f"src.{extension[:-3]}")
-                        log.info(f"Loaded extension {extension[:-3]}")
-                await bot.load_extension("jishaku")
-                log.info("Loaded jishaku")
                 try:
                     bot.db = await EasySQL().connect(**args)
                 except ConnectionError:
@@ -154,6 +148,12 @@ async def main():
                         return
                     log.info("Successfully connected to database")
                 log.info("Connected to database")
+                for extension in os.listdir("src"):
+                    if extension.endswith(".py") and not extension.startswith("_"):
+                        await bot.load_extension(f"src.{extension[:-3]}")
+                        log.info(f"Loaded extension {extension[:-3]}")
+                await bot.load_extension("jishaku")
+                log.info("Loaded jishaku")
                 await bot.db.execute(open("sql/starter.sql", "r").read())
                 log.info("Executed starter sql")
                 observer.start()

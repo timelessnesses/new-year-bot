@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.utils import MISSING
 
 sys.path.append("..")
-import config
+from config import config
 
 
 class Error_Handling(commands.Cog):
@@ -134,4 +134,4 @@ class Error_Handling(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Error_handling(bot))
+    await bot.add_cog(Error_Handling(bot))
