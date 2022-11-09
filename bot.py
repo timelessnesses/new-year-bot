@@ -5,25 +5,12 @@ try:
 except (ImportError, ModuleNotFoundError):
     pass
 
-import discord
-from discord.ext import commands
 from dotenv import load_dotenv
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 load_dotenv()
 import asyncio
-import datetime
-import logging
 import os
-import ssl
-import subprocess
-import traceback
-
-from config import config
-from replit_support import start
-from sql.sql import EasySQL
-
+import logging
 formatting = logging.Formatter("[%(asctime)s] - [%(levelname)s] [%(name)s] %(message)s")
 
 logging.basicConfig(
@@ -44,6 +31,23 @@ with open("logs/bot.log", "w") as f:
 b = logging.FileHandler("logs/bot.log", "a", "utf-8")
 b.setFormatter(formatting)
 log.addHandler(b)
+
+# logging purposes
+
+import discord
+from discord.ext import commands
+from dotenv import load_dotenv
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+import os
+import ssl
+import subprocess
+import traceback
+
+from config import config
+from replit_support import start
+from sql.sql import EasySQL
 
 logging.getLogger("discord").setLevel(logging.WARNING)  # mute
 

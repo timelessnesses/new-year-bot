@@ -40,7 +40,7 @@ class New_Year(commands.Cog):
         self.initialize_guilds.start()
         
     @tasks.loop(minutes=5)
-    async def intialize_guilds(self):
+    async def initialize_guilds(self):
         guilds = await self.db.fetch("SELECT guild_id FROM guilds")
         for guild in self.bot.guilds:
             if not guild.id in guilds:
