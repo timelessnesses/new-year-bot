@@ -3,11 +3,11 @@ from datetime import datetime
 
 import discord
 import pytz
-from discord.ext import commands, tasks
 from discord import app_commands
+from discord.ext import commands, tasks
 
 import sql.sql as sql
-import enum
+
 
 class Timezone_checker(commands.Converter):
     async def convert(self, ctx: commands.Context, argument: str):
@@ -21,7 +21,8 @@ class Timezone_checker(commands.Converter):
             return pytz.timezone(argument)
         else:
             raise commands.BadArgument("Invalid timezone")
-        
+
+
 async def timezone_autocomplete(interaction: discord.Interaction, current: str):
     timezones = pytz.all_timezones
     return [timezone for timezone in timezones if timezone.startswith(current)]
@@ -124,7 +125,6 @@ class New_Year(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
-    
 
     @config.command()
     async def title_newyear(self, ctx: commands.Context, *, title: str):
@@ -134,7 +134,7 @@ class New_Year(commands.Cog):
         await self.db.execute(
             "UPDATE new_year_message SET message_format = $1 WHERE guild_id = $2",
             title,
-            ctx.guild.id
+            ctx.guild.id,
         )
         await ctx.send(
             embed=discord.Embed(
@@ -142,17 +142,19 @@ class New_Year(commands.Cog):
                 color=discord.Color.green(),
             )
         )
-    
+
     @config.command()
-    async def annouce_channel(self,ctx: commands.Context, channel: discord.TextChannel):
+    async def annouce_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel
+    ):
         """
         Set a channel for update time and annouce new year
         """
-        
+
         await self.db.execute(
             "UPDATE config SET annouce_channel_id = $1 WHERE guild_id = $2",
             channel.id,
-            ctx.guild.id
+            ctx.guild.id,
         )
         await ctx.send(
             embed=discord.Embed(
@@ -160,7 +162,7 @@ class New_Year(commands.Cog):
                 color=discord.Color.green(),
             )
         )
-    
+
     @config.command()
     @app_commands.autocomplete(timezone=timezone_autocomplete)
     async def timezone(self, ctx: commands.Context, timezone: Timezone_checker):
@@ -174,7 +176,7 @@ class New_Year(commands.Cog):
         await self.db.execute(
             "UPDATE config SET timezone = $1 WHERE guild_id = $2",
             timezone,
-            ctx.guild.id
+            ctx.guild.id,
         )
         await ctx.send(
             embed=discord.Embed(
@@ -182,7 +184,7 @@ class New_Year(commands.Cog):
                 color=discord.Color.green(),
             )
         )
-    
+
     @config.command()
     async def ping_role(self, ctx: commands.Context, role: discord.Role = "@everyone"):
         """
@@ -191,7 +193,7 @@ class New_Year(commands.Cog):
         await self.db.execute(
             "UPDATE new_year_message SET ping_role_id = $1 WHERE guild_id = $2",
             role.id,
-            ctx.guild.id
+            ctx.guild.id,
         )
         await ctx.send(
             embed=discord.Embed(
@@ -199,6 +201,7 @@ class New_Year(commands.Cog):
                 color=discord.Color.green(),
             )
         )
-    
+
+
 async def setup(bot: commands.Bot) -> typing.NoReturn:
     await bot.add_cog(New_Year(bot))
