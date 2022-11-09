@@ -1,9 +1,28 @@
 import typing
 import discord
 from discord.ext import commands, tasks
+from discord import app_commands
 import pytz
 from datetime import datetime
 import sql.sql as sql
+import enum
+
+class Timezone_checker(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str):
+        if argument in pytz.all_timezones:
+            return pytz.timezone(argument)
+        elif argument.startswith("-") or argument.startswith("+"):
+            if argument[1:].isdigit():
+                return pytz.timezone(f"Etc/GMT{argument}")
+        elif " " in argument:
+            argument = argument.replace(" ", "_")
+            return pytz.timezone(argument)
+        else:
+            raise commands.BadArgument("Invalid timezone")
+        
+async def timezone_autocomplete(interaction: discord.Interaction, current: str):
+    timezones = pytz.all_timezones
+    return [timezone for timezone in timezones if timezone.startswith(current)]
 
 
 class New_Year(commands.Cog):
@@ -55,7 +74,7 @@ class New_Year(commands.Cog):
                     f"{(guild.get_role(new_year_message['ping_role_id']).mention if new_year_message['ping_role_id'] else '@everyone')}",
                     embed=discord.Embed(
                         title=f"{new_year_message['message_format'] if new_year_message['message_format'] else 'Happy new year! 🎉'}",
-                        description=f"{new_year_message['body_message_format'] if new_year_message['body_message_format'] else f'Happy new year! I hope you have a great year ahead! Welcome to {new_year_time.year}!'}",
+                        description=f"{new_year_message['body_message_format'].format(year=new_year_time.year) if new_year_message['body_message_format'] else f'Happy new year! I hope you have a great year ahead! Welcome to {new_year_time.year}!'}",
                         color=discord.Color.green(),
                     )
                 )
@@ -79,12 +98,86 @@ class New_Year(commands.Cog):
                 )
     
     @commands.hybrid_group()
-    async def new_year(self, ctx: commands.Context):
+    async def config(self, ctx: commands.Context):
         """
         New year group command
         """
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
-
+    
+    @config.command()
+    async def title_newyear(self, ctx: commands.Context, *, title: str):
+        """
+        Set new year title
+        """
+        await self.db.execute(
+            "UPDATE new_year_message SET message_format = $1 WHERE guild_id = $2",
+            title,
+            ctx.guild.id
+        )
+        await ctx.send(
+            embed=discord.Embed(
+                title="Title for new year annoucement is set!",
+                color=discord.Color.green(),
+            )
+        )
+    
+    @config.command()
+    async def annouce_channel(self,ctx: commands.Context, channel: discord.TextChannel):
+        """
+        Set a channel for update time and annouce new year
+        """
+        
+        await self.db.execute(
+            "UPDATE config SET annouce_channel_id = $1 WHERE guild_id = $2",
+            channel.id,
+            ctx.guild.id
+        )
+        await ctx.send(
+            embed=discord.Embed(
+                title="Annouce channel is set!",
+                color=discord.Color.green(),
+            )
+        )
+    
+    @config.command()
+    @app_commands.autocomplete(timezone=timezone_autocomplete)
+    async def timezone(self, ctx: commands.Context, timezone: Timezone_checker):
+        """
+        Set timezone for new year
+        Note:
+        - You can use autocomplete to get timezone
+        - You can use UTC as default timezone
+        - You can use UTC offset to set timezone (+7, -7)
+        """
+        await self.db.execute(
+            "UPDATE config SET timezone = $1 WHERE guild_id = $2",
+            timezone,
+            ctx.guild.id
+        )
+        await ctx.send(
+            embed=discord.Embed(
+                title="Timezone is set!",
+                color=discord.Color.green(),
+            )
+        )
+    
+    @config.command()
+    async def ping_role(self, ctx: commands.Context, role: discord.Role = "@everyone"):
+        """
+        Set a role for ping when new year is coming
+        """
+        await self.db.execute(
+            "UPDATE new_year_message SET ping_role_id = $1 WHERE guild_id = $2",
+            role.id,
+            ctx.guild.id
+        )
+        await ctx.send(
+            embed=discord.Embed(
+                title="Ping role is set!",
+                color=discord.Color.green(),
+            )
+        )
+    
 async def setup(bot: commands.Bot) -> typing.NoReturn:
     await bot.add_cog(New_Year(bot))
