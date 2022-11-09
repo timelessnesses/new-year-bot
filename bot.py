@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 import asyncio
-import os
 import logging
+import os
+
 formatting = logging.Formatter("[%(asctime)s] - [%(levelname)s] [%(name)s] %(message)s")
 
 logging.basicConfig(
@@ -34,16 +35,16 @@ log.addHandler(b)
 
 # logging purposes
 
+import os
+import ssl
+import subprocess
+import traceback
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-
-import os
-import ssl
-import subprocess
-import traceback
 
 from config import config
 from replit_support import start

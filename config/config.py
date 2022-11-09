@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
 
 load_dotenv()
+import logging
 import os
 import subprocess
-import logging
 
-logger = logging.getLogger('NewYearBot.config')
+logger = logging.getLogger("NewYearBot.config")
 
 token = os.getenv("NEW_YEAR_TOKEN")
 logger.info("Got Bot Token")
