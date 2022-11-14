@@ -10,9 +10,10 @@ permissions: write-all
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
+    env:
+      PYTHON_ENV: python
     steps:
     - uses: actions/checkout@v2
       
