@@ -34,13 +34,13 @@ log.addHandler(b)
 
 # logging purposes
 
+import asyncio
+import datetime
 import os
+import signal
 import ssl
 import subprocess
 import traceback
-import datetime
-import asyncio
-import signal
 
 import discord
 from discord.ext import commands
@@ -143,14 +143,28 @@ async def main():
             async with bot:
                 try:
                     bot.db = await EasySQL().connect(**args)
-                except (ConnectionError,ConnectionResetError,ConnectionAbortedError,ConnectionRefusedError) as e:
-                    log.fatal(f"Failed to connect to database: {e.with_traceback(None)}")
+                except (
+                    ConnectionError,
+                    ConnectionResetError,
+                    ConnectionAbortedError,
+                    ConnectionRefusedError,
+                ) as e:
+                    log.fatal(
+                        f"Failed to connect to database: {e.with_traceback(None)}"
+                    )
                     log.info("Trying to remove SSL context and reconnect")
                     args["ssl"] = None
                     try:
                         bot.db = await EasySQL().connect(**args)
-                    except (ConnectionError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
-                        log.exception(f"Failed to connect to database: {e.with_traceback(None)}")
+                    except (
+                        ConnectionError,
+                        ConnectionAbortedError,
+                        ConnectionRefusedError,
+                        ConnectionResetError,
+                    ) as e:
+                        log.exception(
+                            f"Failed to connect to database: {e.with_traceback(None)}"
+                        )
                         log.fatal("Exiting...")
                         return
                     log.info("Successfully connected to database")
@@ -182,26 +196,32 @@ async def main():
         log.info("Exiting...")
         await bot.db.close()
 
-def clean_exit(x: int=None,y: int=None, _=None):
+
+def clean_exit(x: int = None, y: int = None, _=None):
     log.fatal("Exitting")
     observer.stop()
     bot.db: EasySQL
     reason = None
-    if not isinstance(x,int) or not isinstance(y,int):
-        reason = (x,y)
+    if not isinstance(x, int) or not isinstance(y, int):
+        reason = (x, y)
         x = 1
         y = 1
     try:
         asyncio.run(bot.db.close())
     except Exception as e:
-        log.fatal(f"Failed to close PostgreSQL connection pool: {e.with_traceback(None)}")
-    log.info(f"Exitted with exit code {x} : {y}\n{' : '.join([str(b) for b in reason])}")
+        log.fatal(
+            f"Failed to close PostgreSQL connection pool: {e.with_traceback(None)}"
+        )
+    log.info(
+        f"Exitted with exit code {x} : {y}\n{' : '.join([str(b) for b in reason])}"
+    )
     exit(1)
-    
-signal.signal(signal.SIGTERM,clean_exit)
-signal.signal(signal.SIGABRT,clean_exit)
-signal.signal(signal.SIGINT,clean_exit)
-signal.signal(signal.SIGBREAK,clean_exit)
+
+
+signal.signal(signal.SIGTERM, clean_exit)
+signal.signal(signal.SIGABRT, clean_exit)
+signal.signal(signal.SIGINT, clean_exit)
+signal.signal(signal.SIGBREAK, clean_exit)
 
 import sys
 
@@ -209,5 +229,5 @@ sys.excepthook = clean_exit
 
 if __name__ == "__main__":
     asyncio.run(main())
-    clean_exit(1,1)
+    clean_exit(1, 1)
     log.error("Something causing bot process to be finished")
