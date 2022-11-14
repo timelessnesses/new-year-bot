@@ -196,6 +196,7 @@ def clean_exit(x: int=None,y: int=None, _=None):
     except Exception as e:
         log.fatal(f"Failed to close PostgreSQL connection pool: {e.with_traceback(None)}")
     log.info(f"Exitted with exit code {x} : {y}\n{' : '.join([str(b) for b in reason])}")
+    exit(1)
     
 signal.signal(signal.SIGTERM,clean_exit)
 signal.signal(signal.SIGABRT,clean_exit)

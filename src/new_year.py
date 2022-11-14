@@ -45,12 +45,17 @@ class New_Year(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def initialize_guilds(self):
+        await self.bot.wait_until_ready()
         guilds = await self.db.fetch("SELECT guild_id FROM config")
+        guilds = [x["guild_id"] for x in guilds]
+        print(guilds)
         for guild in self.bot.guilds:
             if not guild.id in guilds:
+                print("not exists")
                 await self.db.execute(
                     "INSERT INTO config (guild_id) VALUES ($1)", guild.id
                 )
+                print("should exists")
 
     @tasks.loop(minutes=5)
     async def check_time(self):
@@ -173,6 +178,7 @@ class New_Year(commands.Cog):
                 "SELECT * FROM config WHERE guild_id = $1", ctx.guild.id
             )
         )[0]
+        print(db_guild)
         try:
             current_timezone = pytz.timezone(db_guild["timezone"].title())
         except pytz.exceptions.UnknownTimeZoneError:
