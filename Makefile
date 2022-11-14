@@ -1,4 +1,4 @@
-PYTHON_ENV=C:\Users\moopi\AppData\Local\pypoetry\Cache\virtualenvs\new_year_bot-8OIMA0hq-py3.9\Scripts\python
+
 
 run:
 	$(PYTHON_ENV) bot.py
