@@ -8,7 +8,6 @@ except (ImportError, ModuleNotFoundError):
 from dotenv import load_dotenv
 
 load_dotenv()
-import asyncio
 import logging
 import os
 
@@ -39,6 +38,9 @@ import os
 import ssl
 import subprocess
 import traceback
+import datetime
+import asyncio
+import signal
 
 import discord
 from discord.ext import commands
@@ -52,7 +54,7 @@ from sql.sql import EasySQL
 
 logging.getLogger("discord").setLevel(logging.WARNING)  # mute
 
-bot = commands.Bot(command_prefix="a!", intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=config.prefix, intents=discord.Intents.all())
 bot.log = log
 
 observer = Observer()
@@ -141,14 +143,14 @@ async def main():
             async with bot:
                 try:
                     bot.db = await EasySQL().connect(**args)
-                except ConnectionError:
-                    log.fatal("Failed to connect to database")
-                    log.info("Trying to remove SSL context")
+                except (ConnectionError,ConnectionResetError,ConnectionAbortedError,ConnectionRefusedError) as e:
+                    log.fatal(f"Failed to connect to database: {e.with_traceback(None)}")
+                    log.info("Trying to remove SSL context and reconnect")
                     args["ssl"] = None
                     try:
                         bot.db = await EasySQL().connect(**args)
-                    except ConnectionError:
-                        log.exception("Failed to connect to database")
+                    except (ConnectionError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
+                        log.exception(f"Failed to connect to database: {e.with_traceback(None)}")
                         log.fatal("Exiting...")
                         return
                     log.info("Successfully connected to database")
@@ -180,7 +182,31 @@ async def main():
         log.info("Exiting...")
         await bot.db.close()
 
+def clean_exit(x: int=None,y: int=None, _=None):
+    log.fatal("Exitting")
+    observer.stop()
+    bot.db: EasySQL
+    reason = None
+    if not isinstance(x,int) or not isinstance(y,int):
+        reason = (x,y)
+        x = 1
+        y = 1
+    try:
+        asyncio.run(bot.db.close())
+    except Exception as e:
+        log.fatal(f"Failed to close PostgreSQL connection pool: {e.with_traceback(None)}")
+    log.info(f"Exitted with exit code {x} : {y}\n{' : '.join([str(b) for b in reason])}")
+    
+signal.signal(signal.SIGTERM,clean_exit)
+signal.signal(signal.SIGABRT,clean_exit)
+signal.signal(signal.SIGINT,clean_exit)
+signal.signal(signal.SIGBREAK,clean_exit)
+
+import sys
+
+sys.excepthook = clean_exit
 
 if __name__ == "__main__":
     asyncio.run(main())
-    observer.stop()
+    clean_exit(1,1)
+    log.error("Something causing bot process to be finished")
